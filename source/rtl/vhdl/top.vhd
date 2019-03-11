@@ -23,6 +23,8 @@ entity top is
   port (
     clk_i          : in  std_logic;
     reset_n_i      : in  std_logic;
+	 direct_mode_i  : in  std_logic;       -----------------------------------------------------------------------------------
+	 display_mode_i : in  std_logic_vector(1 downto 0);  ---------------------------------------------------------------------
     -- vga
     vga_hsync_o    : out std_logic;
     vga_vsync_o    : out std_logic;
@@ -121,6 +123,26 @@ architecture rtl of top is
   );
   end component;
   
+  	COMPONENT colorbar_driver
+	PORT(
+		row_i : IN std_logic_vector(10 downto 0);
+		column_i : IN std_logic_vector(10 downto 0);          
+		red_o : OUT std_logic_vector(7 downto 0);
+		green_o : OUT std_logic_vector(7 downto 0);
+		blue_o : OUT std_logic_vector(7 downto 0)
+		);
+	END COMPONENT;
+	
+	COMPONENT text_driver
+	PORT(      
+		clk_i : in std_logic;
+		reset_n_i : in std_logic;
+		char_address_o : OUT std_logic_vector(13 downto 0);
+		char_value_o : OUT std_logic_vector(5 downto 0);
+		char_we_o : OUT std_logic
+		);
+	END COMPONENT;
+  
   
   constant update_period     : std_logic_vector(31 downto 0) := conv_std_logic_vector(1, 32);
   
@@ -168,8 +190,8 @@ begin
   graphics_lenght <= conv_std_logic_vector(MEM_SIZE*8*8, GRAPH_MEM_ADDR_WIDTH);
   
   -- removed to inputs pin
-  direct_mode <= '1';
-  display_mode     <= "10";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
+  direct_mode <= '0';
+  display_mode     <= "01";  -- 01 - text mode, 10 - graphics mode, 11 - text & graphics
   
   font_size        <= x"1";
   show_frame       <= '1';
@@ -250,11 +272,26 @@ begin
   --dir_red
   --dir_green
   --dir_blue
+  	Inst_colorbar_driver: colorbar_driver PORT MAP(
+		row_i => dir_pixel_row,
+		column_i => dir_pixel_column,
+		red_o => dir_red,
+		green_o => dir_green,
+		blue_o => dir_blue
+	);
  
   -- koristeci signale realizovati logiku koja pise po TXT_MEM
   --char_address
   --char_value
   --char_we
+  	Inst_text_driver: text_driver PORT MAP(
+		clk_i => pix_clock_s,
+		reset_n_i => reset_n_i,
+		char_address_o => char_address,
+		char_value_o => char_value,
+		char_we_o => char_we
+	);
+  
   
   -- koristeci signale realizovati logiku koja pise po GRAPH_MEM
   --pixel_address
